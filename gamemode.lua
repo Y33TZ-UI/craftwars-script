@@ -1,119 +1,270 @@
---!strict
--- // variables
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local PlayersService = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local string_lower = string.lower
-local table_insert = table.insert
+local LocalPlayer = PlayersService.LocalPlayer
 
--- // cleanup old gui
-if getgenv().CrapwarsGUI then
-    pcall(function() getgenv().CrapwarsGUI:Destroy() end)
-end
-
--- // global state
-getgenv().CrapwarsVars = getgenv().CrapwarsVars or {}
-local G = getgenv().CrapwarsVars
-
-G.godmodeEnabled = G.godmodeEnabled or false
-G.godmodeTarget = G.godmodeTarget or "self"
-G.godmodeHealth = G.godmodeHealth or 99999999
-G.godmodeInterval = G.godmodeInterval or 1
-G.godmodeTargetPlayer = G.godmodeTargetPlayer or ""
-
-G.enabled = G.enabled or false
-G.meteorLoopRunning = G.meteorLoopRunning or false
-
-G.noCooldownEnabled = G.noCooldownEnabled or false
-
-G.autoMineEnabled = G.autoMineEnabled or false
-G.autoMineTool = G.autoMineTool or "auto"
-G.autoMineLocation = G.autoMineLocation or "all"
-G.autoMineOre = G.autoMineOre or ""
-G.autoMineDamage = G.autoMineDamage or 99999999
-G.autoMineInterval = G.autoMineInterval or 0.1
-G.autoMineLoopRunning = G.autoMineLoopRunning or false
-
-G.targetOption = G.targetOption or "Head"
-G.acBypassEnabled = G.acBypassEnabled or true
-
--- // caching
-local MINE_LOCATIONS = {"Mine", "Mine2", "Mine3", "SpaceMine"}
-local cachedPickaxeRF = nil
-local cachedGodmodeRF = nil
-local currentRF = nil
-
--- (ALL YOUR FUNCTIONS ARE UNCHANGED — SAME AS YOUR ORIGINAL)
-
--- // ui stuff
-local RayfieldLibrary = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-
--- 💜 DARK PURPLE THEME (FIXED POSITION)
-RayfieldLibrary:SetTheme({
-    Background = Color3.fromRGB(18, 10, 22),
-    Topbar = Color3.fromRGB(25, 12, 30),
-    Shadow = Color3.fromRGB(0, 0, 0),
-
-    NotificationBackground = Color3.fromRGB(22, 12, 28),
-    NotificationActionsBackground = Color3.fromRGB(30, 15, 40),
-
-    TabBackground = Color3.fromRGB(22, 12, 28),
-    TabStroke = Color3.fromRGB(50, 25, 70),
-    TabBackgroundSelected = Color3.fromRGB(60, 30, 90),
-    TabTextColor = Color3.fromRGB(200, 200, 200),
-    SelectedTabTextColor = Color3.fromRGB(255, 255, 255),
-
-    ElementBackground = Color3.fromRGB(25, 12, 30),
-    ElementBackgroundHover = Color3.fromRGB(40, 20, 55),
-    SecondaryElementBackground = Color3.fromRGB(22, 12, 28),
-    ElementStroke = Color3.fromRGB(60, 30, 90),
-    SecondaryElementStroke = Color3.fromRGB(50, 25, 70),
-
-    SliderBackground = Color3.fromRGB(50, 25, 70),
-    SliderProgress = Color3.fromRGB(110, 60, 170),
-    SliderStroke = Color3.fromRGB(70, 35, 100),
-
-    ToggleBackground = Color3.fromRGB(40, 20, 55),
-    ToggleEnabled = Color3.fromRGB(130, 70, 200),
-    ToggleDisabled = Color3.fromRGB(70, 35, 100),
-    ToggleEnabledStroke = Color3.fromRGB(160, 90, 255),
-    ToggleDisabledStroke = Color3.fromRGB(50, 25, 70),
-
-    DropdownSelected = Color3.fromRGB(40, 20, 55),
-    DropdownUnselected = Color3.fromRGB(25, 12, 30),
-
-    InputBackground = Color3.fromRGB(25, 12, 30),
-    InputStroke = Color3.fromRGB(60, 30, 90),
-    PlaceholderColor = Color3.fromRGB(150, 150, 150),
-
-    TextColor = Color3.fromRGB(255, 255, 255),
-})
-
-local Window = RayfieldLibrary:CreateWindow({
-    Name = "crapwars redardux",
-    LoadingTitle = "crapwars retardux",
-    LoadingSubtitle = "by bbul",
-    Icon = 0,
-    ConfigurationSaving = {
-        Enabled = true,
-        FileName = "crapwars_redux_config"
+local Flags = {
+    Enabled = false,
+    AutoEnemies = false,
+    AutoMines = false,
+    AttackCooldown = 0.5,
+    HitMode = "Damage",
+    MineTargets = {
+        Mine = true,
+        Mine2 = true,
+        Mine3 = true,
     },
-    Discord = { Enabled = false, Invite = "", RememberJoins = true },
-    KeySystem = false
+}
+
+local MineOptions = {
+    "Mine",
+    "Mine2",
+    "Mine3",
+}
+
+local CooldownTimer = 0
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/theneutral0ne/wally-modified/refs/heads/main/wally-modified.lua"))()
+local MainWindow = Library:CreateWindow("Hyperion Hub", {
+    persistwindow = false,
+    itemspacing = 2,
+    togglestyle = "checkmark",
+    underlinecolor = "rainbow",
 })
 
--- (ALL YOUR UI TABS + LOGIC CONTINUE EXACTLY THE SAME)
+MainWindow:Section("Main")
 
--- // init
-if G.acBypassEnabled then task.spawn(Init_Bypass) end
-init()
+MainWindow:Toggle("Enabled", {
+    location = Flags,
+    flag = "Enabled",
+    default = Flags.Enabled,
+    tooltip = "Master switch for this script. If off, no attacks are sent.",
+})
 
-if G.enabled then
-    G.meteorLoopRunning = true
-    task.spawn(MeteorLoop)
+MainWindow:Toggle("Mobs", {
+    location = Flags,
+    flag = "AutoEnemies",
+    default = Flags.AutoEnemies,
+    tooltip = "Automatically hits all valid enemy humanoids in workspace.",
+})
+
+MainWindow:Toggle("Mines", {
+    location = Flags,
+    flag = "AutoMines",
+    default = Flags.AutoMines,
+    tooltip = "Automatically hits ore nodes in the selected mine folders below.",
+})
+
+MainWindow:Dropdown("Mode", {
+    location = Flags,
+    flag = "HitMode",
+    list = { "Damage", "Heal" },
+}, function(Value)
+    Flags.HitMode = Value
+end)
+
+MainWindow:Slider("Cooldown", {
+    location = Flags,
+    flag = "AttackCooldown",
+    min = 0.1,
+    max = 2,
+    default = Flags.AttackCooldown,
+    precise = true,
+    decimals = 2,
+    step = 0.05,
+}, function(Value)
+    Flags.AttackCooldown = Value
+end)
+
+MainWindow:Section("Mine Targets")
+
+MainWindow:MultiSelectList("Mines", {
+    location = Flags,
+    flag = "MineTargets",
+    list = MineOptions,
+    default = Flags.MineTargets,
+    search = true,
+    sort = true,
+    maxVisibleRows = 6,
+    listHeight = 110,
+}, function(SelectedMap)
+    Flags.MineTargets = SelectedMap
+end)
+
+MainWindow:Section("Troll")
+
+MainWindow:Button("God All", {
+    tooltip = "God all players, You must have armour in your backpack to work",
+}, function()
+    for _, Child in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if string.find(Child.Name, "Armour") and Child:FindFirstChild("RemoteFunction") then
+            for _, Player in ipairs(PlayersService:GetPlayers()) do
+                task.wait()
+                local Character = Player.Character
+                local Humanoid = Character and Character:FindFirstChild("Humanoid")
+                if Humanoid and Humanoid.Health > 0 then
+                    Child.RemoteFunction:InvokeServer("protect", { Character, Humanoid, 6000000 })
+                end
+            end
+        end
+    end
+end)
+
+MainWindow:Button("Kill All", {
+    tooltip = "Kills all players, requires armour in backpack to work",
+}, function()
+    for _, Child in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if string.find(Child.Name, "Armour") and Child:FindFirstChild("RemoteFunction") then
+            for _, Player in ipairs(PlayersService:GetPlayers()) do
+                task.wait()
+                local Character = Player.Character
+                local Humanoid = Character and Character:FindFirstChild("Humanoid")
+                if Player.Name ~= LocalPlayer.Name and Humanoid and Humanoid.Health > 0 then
+                    Child.RemoteFunction:InvokeServer("protect", { Character, Humanoid, -math.huge })
+                end
+            end
+        end
+    end
+end)
+
+MainWindow:Button("Set Enemies To 1 HP", {
+    tooltip = "Calculates enemy HP and deals exact damage to leave each one at 1 HP.",
+}, function()
+    local Weapon = nil
+    for _, Child in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if Child:FindFirstChild("SwordControl") and Child:FindFirstChild("RemoteFunction") then
+            Weapon = Child
+            break
+        end
+    end
+
+    if not Weapon then
+        return
+    end
+
+    for _, Humanoid in ipairs((function()
+        local EnemyHumanoids = {}
+        local Seen = {}
+
+        for _, Descendant in ipairs(workspace:GetDescendants()) do
+            if Descendant:IsA("Model") and Descendant:FindFirstChild("EnemyMain") then
+                local EnemyHumanoid = Descendant:FindFirstChild("Humanoid")
+                if EnemyHumanoid and not Seen[EnemyHumanoid] then
+                    Seen[EnemyHumanoid] = true
+                    table.insert(EnemyHumanoids, EnemyHumanoid)
+                end
+            end
+        end
+
+        return EnemyHumanoids
+    end)()) do
+        local Health = Humanoid.Health
+        local IsValidHealth = type(Health) == "number" and Health == Health and math.abs(Health) ~= math.huge
+
+        if IsValidHealth and Health > 1 then
+            local DamageNeeded = Health - 1
+            Weapon.RemoteFunction:InvokeServer("hit", { Humanoid, DamageNeeded })
+        end
+    end
+end)
+
+local function IsUsableHealth(Health)
+    return type(Health) == "number"
+        and Health > 0
+        and Health == Health
+        and math.abs(Health) ~= math.huge
 end
 
-if G.autoMineEnabled then
-    G.autoMineLoopRunning = true
-    task.spawn(AutoMineLoop)
+local function GetOreHealth(Ore)
+    local Ok, PropertyHealth = pcall(function()
+        return Ore.Health
+    end)
+    if Ok and type(PropertyHealth) == "number" then
+        return PropertyHealth
+    end
+
+    local HealthValue = Ore:FindFirstChild("Health")
+    if HealthValue and type(HealthValue.Value) == "number" then
+        return HealthValue.Value
+    end
+
+    local AttributeHealth = Ore:GetAttribute("Health")
+    if type(AttributeHealth) == "number" then
+        return AttributeHealth
+    end
+
+    return nil
 end
+
+local function GetEnemyHumanoids()
+    local EnemyHumanoids = {}
+    local Seen = {}
+
+    for _, Descendant in ipairs(workspace:GetDescendants()) do
+        if Descendant:IsA("Model") and Descendant:FindFirstChild("EnemyMain") then
+            local Humanoid = Descendant:FindFirstChild("Humanoid")
+            if Humanoid and not Seen[Humanoid] then
+                Seen[Humanoid] = true
+                table.insert(EnemyHumanoids, Humanoid)
+            end
+        end
+    end
+
+    return EnemyHumanoids
+end
+
+RunService.RenderStepped:Connect(function(DeltaTime)
+    CooldownTimer += DeltaTime
+
+    if Flags.Enabled ~= true then
+        return
+    end
+
+    local Weapon = nil
+    for _, Child in ipairs(LocalPlayer.Backpack:GetChildren()) do
+        if Child:FindFirstChild("SwordControl") and Child:FindFirstChild("RemoteFunction") then
+            Weapon = Child
+            break
+        end
+    end
+
+    local Cooldown = tonumber(Flags.AttackCooldown) or 0.5
+    if CooldownTimer < Cooldown or not Weapon then
+        return
+    end
+
+    local HitValue = (Flags.HitMode == "Heal") and -math.huge or math.huge
+
+    if Flags.AutoEnemies == true then
+        for _, Humanoid in ipairs(GetEnemyHumanoids()) do
+            if IsUsableHealth(Humanoid.Health) then
+                Weapon.RemoteFunction:InvokeServer("hit", { Humanoid, HitValue })
+            end
+        end
+    end
+
+    if Flags.AutoMines == true and type(Flags.MineTargets) == "table" then
+        for MineName, IsSelected in pairs(Flags.MineTargets) do
+            if IsSelected == true and type(MineName) == "string" then
+                local MineFolder = workspace:FindFirstChild(MineName)
+                if MineFolder then
+                    for _, Child in ipairs(MineFolder:GetChildren()) do
+                        local Ore = Child:FindFirstChild("Ore")
+                        if Ore then
+                            local OreHealth = GetOreHealth(Ore)
+                            if OreHealth == nil or IsUsableHealth(OreHealth) then
+                                Weapon.RemoteFunction:InvokeServer("hit", { Ore, HitValue })
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    CooldownTimer = 0
+end)
+
+
+
+
+      

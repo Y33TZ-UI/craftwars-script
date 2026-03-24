@@ -93,10 +93,20 @@ closeBtn.MouseButton1Click:Connect(function()
 confirm.Visible = true 
 end)
 yes.MouseButton1Click:Connect(function()
-gui:Destroy() 
-end)
-no.MouseButton1Click:Connect(function()
-confirm.Visible = false 
+    for i = 1,10 do
+        frame.BackgroundTransparency += 0.1
+        topBar.BackgroundTransparency += 0.1
+
+        for _,v in pairs(frame:GetDescendants()) do
+            if v:IsA("TextLabel") or v:IsA("TextButton") then
+                v.TextTransparency = i/10
+            end
+        end
+
+        task.wait(0.03)
+    end
+
+    gui:Destroy()
 end)
 -- Tabs
 local tabHolder = Instance.new("Frame",frame)

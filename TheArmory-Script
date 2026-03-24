@@ -165,6 +165,49 @@ aimOff.MouseButton1Click:Connect(function() aimAssist=false end)
 snapOn.MouseButton1Click:Connect(function() snapAim=true aimAssist=false end)
 snapOff.MouseButton1Click:Connect(function() snapAim=false end)
 
+-- 🎯 FOV CIRCLE
+local fovCircle = Drawing.new("Circle")
+fovCircle.Visible = false
+fovCircle.Radius = 120
+fovCircle.Color = Color3.fromRGB(120,0,180) -- dark purple
+fovCircle.Thickness = 2
+fovCircle.Filled = false
+fovCircle.Transparency = 1
+
+-- keep circle on cursor
+RunService.RenderStepped:Connect(function()
+    local mouse = UIS:GetMouseLocation()
+    fovCircle.Position = Vector2.new(mouse.X, mouse.Y)
+end)
+
+-- update visibility
+local function updateFOV()
+    fovCircle.Visible = aimAssist or snapAim
+end
+
+-- hook into buttons
+aimOn.MouseButton1Click:Connect(function()
+    aimAssist = true
+    snapAim = false
+    updateFOV()
+end)
+
+aimOff.MouseButton1Click:Connect(function()
+    aimAssist = false
+    updateFOV()
+end)
+
+snapOn.MouseButton1Click:Connect(function()
+    snapAim = true
+    aimAssist = false
+    updateFOV()
+end)
+
+snapOff.MouseButton1Click:Connect(function()
+    snapAim = false
+    updateFOV()
+end)
+
 -- Misc
 local rejoin=Instance.new("TextButton",mPage)
 rejoin.Size=UDim2.new(0.85,0,0,50)

@@ -33,6 +33,30 @@ title.BackgroundTransparency = 1
 title.Text = "Hyperion Hub"
 title.TextColor3 = Color3.fromRGB(200,150,255)
 title.TextScaled = true
+
+-- ✨ FADE IN
+frame.BackgroundTransparency = 1
+topBar.BackgroundTransparency = 1
+
+local function setTextTransparency(val)
+    for _,v in pairs(frame:GetDescendants()) do
+        if v:IsA("TextLabel") or v:IsA("TextButton") then
+            v.TextTransparency = val
+        end
+    end
+end
+
+setTextTransparency(1)
+
+task.spawn(function()
+    for i = 1,10 do
+        frame.BackgroundTransparency -= 0.1
+        topBar.BackgroundTransparency -= 0.1
+        setTextTransparency(1 - (i/10))
+        task.wait(0.03)
+    end
+end)
+
 -- Close Button
 local closeBtn = Instance.new("TextButton", topBar)
 closeBtn.Size = UDim2.new(0,32,0,32)

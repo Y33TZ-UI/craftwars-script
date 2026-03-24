@@ -1,0 +1,465 @@
+-- Load
+
+if not game:IsLoaded() then game.Loaded:Wait() end
+
+-- Services
+
+local player = game.Players.LocalPlayer
+
+local Players = game:GetService("Players")
+
+local UIS = game:GetService("UserInputService")
+
+local RunService = game:GetService("RunService")
+
+local TeleportService = game:GetService("TeleportService")
+
+local camera = workspace.CurrentCamera
+
+-- GUI
+
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+
+gui.Name = "HyperionHub"
+
+-- Toggle GUI (K)
+
+UIS.InputBegan:Connect(function(i,gp)
+
+if not gp and i.KeyCode == Enum.KeyCode.K then
+
+    gui.Enabled = not gui.Enabled
+
+end
+
+end)
+
+-- Main Frame
+
+local frame = Instance.new("Frame", gui)
+
+frame.Size = UDim2.new(0,340,0,440)
+
+frame.Position = UDim2.new(0.5,-170,0.5,-220)
+
+frame.BackgroundColor3 = Color3.fromRGB(45,0,70)
+
+frame.Active = true
+
+frame.Draggable = true
+
+Instance.new("UICorner",frame)
+
+-- Top Bar
+
+local topBar = Instance.new("Frame",frame)
+
+topBar.Size = UDim2.new(1,0,0,45)
+
+topBar.BackgroundColor3 = Color3.fromRGB(60,0,90)
+
+Instance.new("UICorner",topBar)
+
+local title = Instance.new("TextLabel",topBar)
+
+title.Size = UDim2.new(1,-40,1,0)
+
+title.BackgroundTransparency = 1
+
+title.Text = "Hyperion Hub"
+
+title.TextColor3 = Color3.fromRGB(200,150,255)
+
+title.TextScaled = true
+
+-- Close Button
+
+local closeBtn = Instance.new("TextButton", topBar)
+
+closeBtn.Size = UDim2.new(0,32,0,32)
+
+closeBtn.Position = UDim2.new(1,-38,0,6)
+
+closeBtn.Text = "X"
+
+closeBtn.BackgroundColor3 = Color3.fromRGB(120,0,180)
+
+closeBtn.TextColor3 = Color3.new(1,1,1)
+
+closeBtn.TextScaled = true
+
+Instance.new("UICorner", closeBtn)
+
+-- Confirm Close
+
+local confirm = Instance.new("Frame", gui)
+
+confirm.Size = UDim2.new(0,260,0,120)
+
+confirm.Position = UDim2.new(0.5,-130,0.5,-60)
+
+confirm.BackgroundColor3 = Color3.fromRGB(50,0,80)
+
+confirm.Visible = false
+
+Instance.new("UICorner",confirm)
+
+local txt = Instance.new("TextLabel",confirm)
+
+txt.Size = UDim2.new(1,0,0.5,0)
+
+txt.BackgroundTransparency = 1
+
+txt.Text = "Are you sure you want to close this gui?"
+
+txt.TextColor3 = Color3.new(1,1,1)
+
+txt.TextScaled = true
+
+local yes = Instance.new("TextButton",confirm)
+
+yes.Size = UDim2.new(0.4,0,0.3,0)
+
+yes.Position = UDim2.new(0.1,0,0.6,0)
+
+yes.Text = "YES"
+
+yes.BackgroundColor3 = Color3.fromRGB(0,170,0)
+
+local no = Instance.new("TextButton",confirm)
+
+no.Size = UDim2.new(0.4,0,0.3,0)
+
+no.Position = UDim2.new(0.5,0,0.6,0)
+
+no.Text = "NO"
+
+no.BackgroundColor3 = Color3.fromRGB(170,0,0)
+
+closeBtn.MouseButton1Click:Connect(function()
+
+confirm.Visible = true
+
+end)
+
+yes.MouseButton1Click:Connect(function()
+
+gui:Destroy()
+
+end)
+
+no.MouseButton1Click:Connect(function()
+
+confirm.Visible = false
+
+end)
+
+-- Tabs
+
+local tabHolder = Instance.new("Frame",frame)
+
+tabHolder.Size = UDim2.new(1,0,0,40)
+
+tabHolder.Position = UDim2.new(0,0,0,50)
+
+tabHolder.BackgroundTransparency = 1
+
+local function createTab(name,pos)
+
+local b=Instance.new("TextButton",tabHolder)
+
+b.Size=UDim2.new(0.23,0,1,0)
+
+b.Position=UDim2.new(pos,0,0,0)
+
+b.Text=name
+
+b.BackgroundColor3=Color3.fromRGB(45,0,75)
+
+b.TextColor3=Color3.new(1,1,1)
+
+b.TextScaled=true
+
+Instance.new("UICorner",b)
+
+return b
+
+end
+
+local vTab=createTab("Visuals",0)
+
+local cTab=createTab("Combat",0.25)
+
+local mTab=createTab("Misc",0.5)
+
+local crTab=createTab("Credits",0.75)
+
+-- Pages
+
+local function newPage()
+
+local p=Instance.new("Frame",frame)
+
+p.Size=UDim2.new(1,0,1,-100)
+
+p.Position=UDim2.new(0,0,0,95)
+
+p.BackgroundTransparency=1
+
+return p
+
+end
+
+local vPage=newPage()
+
+local cPage=newPage()
+
+local mPage=newPage()
+
+local crPage=newPage()
+
+local function switch(p)
+
+vPage.Visible=false cPage.Visible=false mPage.Visible=false crPage.Visible=false
+
+p.Visible=true
+
+end
+
+vTab.MouseButton1Click:Connect(function() switch(vPage) end)
+
+cTab.MouseButton1Click:Connect(function() switch(cPage) end)
+
+mTab.MouseButton1Click:Connect(function() switch(mPage) end)
+
+crTab.MouseButton1Click:Connect(function() switch(crPage) end)
+
+switch(vPage)
+
+-- Toggle Creator
+
+local function createToggle(parent,text,y)
+
+local frame=Instance.new("Frame",parent)
+
+frame.Size=UDim2.new(0.85,0,0,50)
+
+frame.Position=UDim2.new(0.075,0,0,y)
+
+frame.BackgroundColor3=Color3.fromRGB(70,0,120)
+
+Instance.new("UICorner",frame)
+
+
+
+local label=Instance.new("TextLabel",frame)
+
+label.Size=UDim2.new(0.4,0,1,0)
+
+label.BackgroundTransparency=1
+
+label.Text=text
+
+label.TextScaled=true
+
+label.TextColor3=Color3.new(1,1,1)
+
+
+
+local onBtn=Instance.new("TextButton",frame)
+
+onBtn.Size=UDim2.new(0.25,0,0.7,0)
+
+onBtn.Position=UDim2.new(0.45,0,0.15,0)
+
+onBtn.Text="[ON]"
+
+onBtn.BackgroundColor3=Color3.fromRGB(0,170,0)
+
+
+
+local offBtn=Instance.new("TextButton",frame)
+
+offBtn.Size=UDim2.new(0.25,0,0.7,0)
+
+offBtn.Position=UDim2.new(0.72,0,0.15,0)
+
+offBtn.Text="[OFF]"
+
+offBtn.BackgroundColor3=Color3.fromRGB(170,0,0)
+
+
+
+Instance.new("UICorner",onBtn)
+
+Instance.new("UICorner",offBtn)
+
+
+
+return onBtn,offBtn
+
+end
+
+-- ESP
+
+local espOn,espOff=createToggle(vPage,"ESP",10)
+
+espOn.MouseButton1Click:Connect(function()
+
+for _,p in pairs(Players:GetPlayers()) do
+
+    if p~=player and p.Character then
+
+        local h=Instance.new("Highlight",p.Character)
+
+        h.FillColor=Color3.fromRGB(140,0,200)
+
+    end
+
+end
+
+end)
+
+espOff.MouseButton1Click:Connect(function()
+
+for _,p in pairs(Players:GetPlayers()) do
+
+    if p.Character then
+
+        for _,v in pairs(p.Character:GetChildren()) do
+
+            if v:IsA("Highlight") then v:Destroy() end
+
+        end
+
+    end
+
+end
+
+end)
+
+-- 🎯 Smooth Aimbot
+
+local aimOn,aimOff=createToggle(cPage,"Smooth Aimbot",10)
+
+local aimAssist=false
+
+-- ⚡ Quick Aim
+
+local snapOn,snapOff=createToggle(cPage,"Quick Aim",70)
+
+local snapAim=false
+
+local function getTarget()
+
+local closest=nil
+
+local shortest=180
+
+local center=Vector2.new(camera.ViewportSize.X/2,camera.ViewportSize.Y/2)
+
+
+
+for _,p in pairs(Players:GetPlayers()) do
+
+    if p~=player and p.Character and p.Character:FindFirstChild("Head") then
+
+        local pos,visible=camera:WorldToViewportPoint(p.Character.Head.Position)
+
+        if visible then
+
+            local dist=(Vector2.new(pos.X,pos.Y)-center).Magnitude
+
+            if dist < shortest then
+
+                shortest=dist
+
+                closest=p.Character.Head
+
+            end
+
+        end
+
+    end
+
+end
+
+return closest
+
+end
+
+RunService.RenderStepped:Connect(function()
+
+local target=getTarget()
+
+if target then
+
+    local camPos=camera.CFrame.Position
+
+    local dir=(target.Position-camPos).Unit
+
+
+
+    if aimAssist then
+
+        local new=camera.CFrame.LookVector:Lerp(dir,0.35)
+
+        camera.CFrame=CFrame.new(camPos,camPos+new)
+
+    elseif snapAim then
+
+        local new=camera.CFrame.LookVector:Lerp(dir,0.8)
+
+        camera.CFrame=CFrame.new(camPos,camPos+new)
+
+    end
+
+end
+
+end)
+
+aimOn.MouseButton1Click:Connect(function() aimAssist=true snapAim=false end)
+
+aimOff.MouseButton1Click:Connect(function() aimAssist=false end)
+
+snapOn.MouseButton1Click:Connect(function() snapAim=true aimAssist=false end)
+
+snapOff.MouseButton1Click:Connect(function() snapAim=false end)
+
+-- Misc
+
+local rejoin=Instance.new("TextButton",mPage)
+
+rejoin.Size=UDim2.new(0.85,0,0,50)
+
+rejoin.Position=UDim2.new(0.075,0,0,10)
+
+rejoin.Text="Rejoin Server"
+
+rejoin.BackgroundColor3=Color3.fromRGB(70,0,120)
+
+rejoin.TextColor3=Color3.new(1,1,1)
+
+rejoin.TextScaled=true
+
+Instance.new("UICorner",rejoin)
+
+rejoin.MouseButton1Click:Connect(function()
+
+TeleportService:TeleportToPlaceInstance(game.PlaceId,game.JobId,player)
+
+end)
+
+-- Credits
+
+local credits=Instance.new("TextLabel",crPage)
+
+credits.Size=UDim2.new(1,0,1,0)
+
+credits.BackgroundTransparency=1
+
+credits.Text="If theres any bugs join the discord server and tell us !\n\nCredits:\n16Y33TZ (Tangyaltfromhim2)\n\nDiscord:\nhttps://discord.gg/YTJZNgk365"
+
+credits.TextColor3=Color3.new(1,1,1)
+
+credits.TextScaled=true                                                in this script i said now i want u to change the name quick aim to Snap Aimbot
